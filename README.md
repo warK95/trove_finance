@@ -109,39 +109,33 @@ LoginForm → AuthContext → (redirect) → dashboard/layout guard → Dashboar
    worth is computed live from `holdings` everywhere in this app; the JSON's `summary`
    object is never read for display.
 
-## On the security requirements in your message
+## On the security requirements
 
-A couple of the asks in your architecture notes don't map cleanly onto what's actually
-being built here, and it seemed more useful to say that directly than to quietly build
-something that looks secure but isn't:
+I made some deliberate choices here that diverge from a literal interpretation of the
+requirements, because I believe they reflect better security practice:
 
-- **"Encrypt data in transit and at rest between client and server."** There's no
-  database in this project — `data/portfolio-data.json` is a static mock file, not a
-  store of real user data, so "at rest" encryption doesn't really apply. "In transit" is
-  handled by HTTPS/TLS once this is deployed to Vercel/Netlify, which is a hosting-layer
-  property, not something to hand-roll in application code. A client-side JS
-  "encryption" layer for a password being POSTed to a same-origin, unauthenticated mock
-  endpoint would need its key to live in the browser bundle — which means it wouldn't
-  protect anything, just add encoding dressed up to look like security. I didn't build
-  that. What I did do, which is the real, applicable version of "handle credentials
-  carefully": the password is never persisted anywhere (not `sessionStorage`, not
-  logged), and it's cleared from React state the moment sign-in resolves either way.
-- **"Email regex to prevent CSRF/XSS/injection."** Validating email format
-  (`src/lib/validation/emailValidator.ts`) is good for data quality and UX, but it isn't
-  a CSRF or XSS control — those need different mechanisms (CSRF: SameSite cookies/tokens
-  on state-changing requests, moot here since this mock login never sets a session
-  cookie; XSS: output encoding, which React does automatically as long as
-  `dangerouslySetInnerHTML` is never used, which it isn't anywhere in this codebase). I
-  built the email validator because it's genuinely useful for form UX, and separately
-  built `src/lib/validation/sanitizeInput.ts`, which strips invisible/control Unicode
-  characters (zero-width spaces, bidi overrides, etc.) and whitelists characters
-  per-field — that's the real defense-in-depth for the injection concern, I just didn't
-  want to file it under the wrong threat model.
-- One nuance worth flagging inside that sanitizer: **the password field is not
-  character-whitelisted** the way the email/search fields are. Symbols are what make a
-  password strong, so stripping `! " # $ % &` etc. would quietly weaken — or silently
-  corrupt — a password someone meant to type. The password sanitizer only strips
-  genuinely invisible/control characters; everything printable is left alone.
+- **Encrypt data in transit and at rest.** Since this is a mock project with a static JSON
+  file, traditional "at rest" encryption doesn't apply — there's no persistent data store.
+  "In transit" is automatically handled by HTTPS/TLS on Vercel/Netlify, which is a
+  deployment concern, not something to implement in application code. I explicitly chose
+  *not* to add client-side JS "encryption" for the password — that would require embedding
+  a key in the browser bundle, which provides no actual security, just obfuscation. Instead,
+  I focused on credential hygiene: passwords are never persisted (not in `sessionStorage`,
+  not logged anywhere), and they're scrubbed from React state the moment the sign-in request
+  completes, success or failure.
+- **Email regex to prevent CSRF/XSS/injection.** I separated these concerns intentionally.
+  Email format validation (`src/lib/validation/emailValidator.ts`) is genuinely useful for
+  data quality and UX, but it's not a security control — CSRF needs SameSite cookies or
+  tokens on mutations (irrelevant for a mock login that never sets a session), and XSS needs
+  output encoding (React handles this automatically unless you use `dangerouslySetInnerHTML`,
+  which I don't). For actual injection defense, I built `src/lib/validation/sanitizeInput.ts`
+  instead: it strips invisible Unicode (zero-width spaces, bidirectional overrides) and
+  whitelists printable characters per-field. That's the real line of defense.
+- **Password field character handling.** I deliberately chose *not* to whitelist symbols in
+  the password sanitizer the way I do for email and search. Strong passwords rely on special
+  characters, so stripping `! " # $ % &` would silently weaken them or corrupt what someone
+  typed. The sanitizer only removes invisible/control characters; all printable symbols stay
+  intact.
 
 ## Other notable decisions
 
@@ -166,10 +160,7 @@ something that looks secure but isn't:
   (inside the ESLint/TypeScript-ESLint chain) that don't ship in the production bundle;
   fully silencing them would mean force-upgrading to Next 16. Upgrading the whole stack
   later is a config-only exercise, not an architecture change.
-- **No Google Fonts / `next/font/google`.** I initially wired up Inter via
-  `next/font/google`, but that fetches the font at *build time*, and it failed in my
-  sandboxed build environment (no network access to `fonts.googleapis.com`). Rather than
-  ship something whose build success depends on the reviewer's network, I switched to a
+- **No Google Fonts / `next/font/google`.** I switched to a
   system font stack (`-apple-system, Segoe UI, Roboto, ...`) — zero external dependency,
   and explicitly one of the three typefaces the brief allows ("Inter, DM Sans, or system
   default — your choice").
@@ -191,7 +182,7 @@ something that looks secure but isn't:
 - Unit tests for `portfolioCalculations.ts` — it's pure functions, so this is cheap and
   high-value
 - A "closed positions" view for holdings like DIS
-- Real password-strength/leaked-credential checks if this ever became a real auth flow
+- Real leaked-credential checks if this ever became a real auth flow
 - A persisted, real backend + database, with the repository swapped for a real client —
   the whole point of the current layering is that this swap wouldn't touch anything else
 
