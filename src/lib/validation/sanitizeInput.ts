@@ -1,0 +1,75 @@
+/**
+ * FOR SECURITY MINDED INDIVIDUALS (ENGINEERS): This file contains input sanitization utilities for form fields. These functions are designed to strip invisible or confusable Unicode characters that have no legitimate reason to be in a login or search field, and to keep obviously malformed input out of component state before it ever renders anywhere. The goal is to provide defense-in-depth for the login and search inputs, ensuring that only valid and safe input is processed by the application.
+ *
+ * The functions provided in this file include:
+ * - stripHiddenUnicode: Removes C0/C1 control characters, zero-width characters, and bidirectional override/formatting characters from a string.
+ * - sanitizeDisplayText: Whitelists letters (any language), numbers, spaces, and a small set of punctuation for names, tickers, and other free-text display/search fields.
+ * - sanitizeEmailInput: Whitelists only the characters that can legally appear in an email address for the email field.
+ * - sanitizePassword: Removes characters that can never be a real, intentional keystroke from the password field, while leaving all printable characters untouched to preserve password strength.
+ *
+ * These utilities are intended to be used in conjunction with client-side validation and server-side validation to ensure that user input is safe and valid before it is processed by the application.
+ *
+ * Note: These functions are not a substitute for proper server-side validation and security measures. They are intended to provide an additional layer of defense against potentially malicious input.
+ *
+ * @module sanitizeInput
+ * @author Alozie Chijindu Victor
+ * @version 1.0.0
+ * @license MIT
+ * @see {@link https://example.com/sanitizeInput} 
+ * Input sanitization utilities for form fields.
+ *
+ * Scope, honestly stated: these are defense-in-depth helpers for the
+ * login and search inputs. What they DO meaningfully do: strip
+ * invisible/confusable Unicode that has no legitimate reason to be in
+ * a login or search field, and keep obviously-malformed input out of
+ * component state before it ever renders anywhere.
+ */
+
+// C0/C1 control characters, zero-width characters, and bidirectional
+// override/formatting characters. None of these have a visible glyph;
+// real attacks have used them to hide payloads or to make a string
+// display as something other than what it actually contains.
+
+/** I AM VERY SECURITY CONCIOUS BASED ON MY TENURE IN INFORMATION TECHNOLOGY AND SOFTWARE ENGINEERING */
+
+const HIDDEN_UNICODE_PATTERN =
+  // eslint-disable-next-line no-control-regex
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]/g;
+
+export function stripHiddenUnicode(value: string): string {
+  return value.replace(HIDDEN_UNICODE_PATTERN, '');
+}
+
+/**
+ * For names, tickers, and other free-text display/search fields.
+ * Whitelists letters (any language), numbers, spaces, and the small
+ * set of punctuation that legitimately shows up in company names and
+ * search terms (e.g. "Johnson & Johnson", "Berkshire Hathaway-B").
+ */
+export function sanitizeDisplayText(value: string, maxLength = 100): string {
+  const withoutHidden = stripHiddenUnicode(value);
+  const whitelisted = withoutHidden.replace(/[^\p{L}\p{N}\s&.,'-]/gu, '');
+  return whitelisted.slice(0, maxLength);
+}
+
+/**
+ * For the email field specifically. Narrower charset than free text -
+ * only what can legally appear in an email address.
+ */
+export function sanitizeEmailInput(value: string, maxLength = 254): string {
+  const withoutHidden = stripHiddenUnicode(value);
+  const whitelisted = withoutHidden.replace(/[^a-zA-Z0-9@._+-]/g, '');
+  return whitelisted.slice(0, maxLength);
+}
+
+/**
+ * For the password field. Deliberately does NOT whitelist characters
+ * the way the fields above do: symbols like ! " # $ % & are exactly
+ * what make a password strong, so stripping them would quietly weaken
+ * (or silently corrupt) a password someone meant to type. This only
+ * removes characters that can never be a real, intentional keystroke -
+ * everything printable is left untouched.
+ */
+export function sanitizePassword(value: string, maxLength = 128): string {
+  return stripHiddenUnicode(value).slice(0, maxLength);
+}
