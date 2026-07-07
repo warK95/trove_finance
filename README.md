@@ -21,6 +21,8 @@ npm run build && npm run start   # production build
 
 ## Deploying
 
+### THIS APP WAS DEPLOYED TO THE DEV BRANCH 
+
 Standard Next.js 14 App Router project — deploys to **Vercel** with zero configuration:
 push this to a GitHub repo, import it in Vercel, done. Netlify works too via their
 Next.js runtime.
@@ -34,7 +36,8 @@ git config user.name "Your Name"
 git config user.email "you@example.com"
 git commit --amend --reset-author --no-edit
 git remote add origin <your-empty-repo-url>
-git push -u origin main
+git push -u origin dev
+NOTE: DEVELOPMENT IS THE UPSTREAM BRANCH SET TO TRACK
 ```
 
 ## Architecture

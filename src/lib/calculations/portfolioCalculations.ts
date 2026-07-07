@@ -65,7 +65,7 @@ export function computeHoldingViews(holdings: Holding[]): HoldingView[] {
       const gainPercent = priceUnavailable || costBasis === 0 ? 0 : (gainAmount / costBasis) * 100; // applied tenary ops to calculate percentage gain.
 
       return {
-        ...h,
+        ...h, // use the spread ops to pass unnamed args.
         marketValue,
         costBasis,
         gainAmount,
