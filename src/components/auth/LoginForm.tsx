@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { isValidEmail } from '@/lib/validation/emailValidator';
+import { isValidPassword } from '@/lib/validation/passwordValidator';
 import { sanitizeEmailInput, sanitizePassword } from '@/lib/validation/sanitizeInput';
 import { Button } from '@/components/ui/Button';
 
@@ -18,6 +19,12 @@ interface Touched {
   password: boolean;
 }
 
+/**
+ * Validates the email and password inputs.
+ * @param email An string representing the email address of the user.
+ * @param password A string representation of the user password.
+ * @returns A field error type variable that contains the error messages for the email and password fields.
+ */
 function validate(email: string, password: string): FieldErrors {
   const errors: FieldErrors = {};
   if (!email.trim()) {
@@ -27,6 +34,9 @@ function validate(email: string, password: string): FieldErrors {
   }
   if (!password) {
     errors.password = 'Password cannot be left empty.';
+  } else if (!isValidPassword(password)) {
+    errors.password =
+      'Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.';
   }
   return errors;
 }
@@ -50,7 +60,11 @@ export function LoginForm() {
     setTouched({ email: true, password: true });
     if (Object.keys(errors).length > 0) return;
 
-    const success = await login(email.trim(), password);
+    // logs the user in by calling the login function from the AuthContext. 
+    // The login function takes the email and password as arguments and returns a boolean indicating whether the login was successful or not. 
+    // If the login is successful, it redirects the user to the /dashboard page using the router.push method. 
+    // If the login fails, it displays an error message to the user.
+    const success = await login(email.trim(), password); 
     if (success) router.push('/dashboard');
   }
 

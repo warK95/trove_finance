@@ -29,13 +29,23 @@ const SECTOR_COLORS: Record<string, string> = {
 };
 const FALLBACK_SECTOR_COLORS = ['#059A83', '#00B6DF', '#7B79C9', '#F2C891', '#00323D'];
 
-/** Quirk #2 (DIS): 0 shares means the position is closed, not active. */
+/**
+ * A function to determine if a holding is closed or not.
+ * @param holding The data type that describes a holding position.
+ * @returns A boolean indicating if the holding position is closed (true) or not (false).
+ */
 export function isClosedPosition(holding: Holding): boolean {
+  /** Quirk #2 (DIS): 0 shares means the position is closed, not active. */
   return holding.shares <= 0;
 }
 
-/** Quirk #1 (NVDA): a 0/missing price means "unavailable", not "worthless". */
+/**
+ * Checks to see if a holding price is available or missing.
+ * @param holding The data type that describes a holding position.
+ * @returns A boolean indicating if the price for a particular holding is available or not.
+ */
 export function isPriceUnavailable(holding: Holding): boolean {
+  /** Quirk #1 (NVDA): a 0/missing price means "unavailable", not "worthless". */
   return !isClosedPosition(holding) && !(holding.currentPrice > 0);
 }
 
@@ -48,11 +58,11 @@ export function computeHoldingViews(holdings: Holding[]): HoldingView[] {
   return holdings
     .filter((h) => !isClosedPosition(h))
     .map((h) => {
-      const priceUnavailable = isPriceUnavailable(h);
-      const marketValue = priceUnavailable ? 0 : h.shares * h.currentPrice;
+      const priceUnavailable = isPriceUnavailable(h); // Gets the boolean const state for price availability
+      const marketValue = priceUnavailable ? 0 : h.shares * h.currentPrice; // use tenary ops to compute market value.
       const costBasis = h.shares * h.avgCost;
-      const gainAmount = priceUnavailable ? 0 : marketValue - costBasis;
-      const gainPercent = priceUnavailable || costBasis === 0 ? 0 : (gainAmount / costBasis) * 100;
+      const gainAmount = priceUnavailable ? 0 : marketValue - costBasis; // use tenary ops to compute gain.
+      const gainPercent = priceUnavailable || costBasis === 0 ? 0 : (gainAmount / costBasis) * 100; // applied tenary ops to calculate percentage gain.
 
       return {
         ...h,
