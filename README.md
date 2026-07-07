@@ -11,6 +11,13 @@ npm install
 npm run dev
 ```
 
+## Viewing it online
+
+To access the website online go to [https://trove-finance.vercel.app/login]
+```
+Visit the webpage 'https://trove-finance.vercel.app/login' and login with any email and password.
+```
+
 Then open [http://localhost:3000](http://localhost:3000). There's no real backend or
 credential store (per the brief), so **any syntactically valid email + any non-empty
 password** signs you in — e.g. `you@example.com` / `anything`.
